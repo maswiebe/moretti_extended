@@ -1,4 +1,4 @@
-This repository contains Stata .do files for performing a replication of "[The Effect of High-Tech Clusters on the Productivity of Top Inventors](https://www.aeaweb.org/articles?id=10.1257/aer.20191277)", Moretti (2021).
+This repository contains Stata .do files for the [additional results](https://michaelwiebe.com/assets/moretti/moretti_extended.pdf) from my replication of "[The Effect of High-Tech Clusters on the Productivity of Top Inventors](https://www.aeaweb.org/articles?id=10.1257/aer.20191277)", Moretti (2021).
 
 To combine my code with the data, first download this repository, then download the original [replication package](https://www.openicpsr.org/openicpsr/project/140662/version/V1/view) and extract the folder 'AER_UPLOADED' to the directory 'data/'.
 
