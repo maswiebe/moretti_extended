@@ -31,10 +31,10 @@ foreach i in "1m" "2m" "3m" "6m" "1y" "2y" "3y" {
 
 
     * MERGE WITH NBER PATENT DATA
-    gsort patent
+    /* gsort patent
     merge m:m patent using  $main/data/apat63_99
     drop _merge
-    drop if inventor_id ==.
+    drop if inventor_id ==. */
 
     *****************************************************************
     * counting if in different cities/fields in the same year
@@ -160,7 +160,7 @@ foreach i in "1m" "2m" "3m" "6m" "1y" "2y" "3y" {
     * COLLAPSE
     gsort inventor_id year
     * inventor-time level data
-    gcollapse main_bea main_zd main_class general original (sum) number citat, by(inventor_id year main_org)
+    gcollapse main_bea main_zd main_class (sum) number citat, by(inventor_id year main_org)
 
     rename main_bea bea_code
     rename main_zd zd2

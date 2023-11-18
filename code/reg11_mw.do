@@ -23,12 +23,13 @@ drop if bea ==.
 gegen total = sum(number), by(inventor)
 
 * INCLUDE THE FOLLOWING 6 LINES IF YOU DON'T WANT INTERPOLATED DATA
-replace bea    =. if inter_bea   ==1
+** MW: I skipped interpolation
+/* replace bea    =. if inter_bea   ==1
 replace zd     =. if inter_zd    ==1
 replace class  =. if inter_class ==1
 replace bea    =. if inter_bea2  ==1
 replace zd     =. if inter_zd2   ==1
-replace class  =. if inter_class2==1
+replace class  =. if inter_class2==1 */
 
 
 
@@ -320,8 +321,7 @@ esttab nfs* using "$tables/t5_fs_fix.tex", se label compress replace star(* 0.10
 esttab nfs* using "$tables/t5_fs_fix_nostar.tex", se label compress replace nomtitle nocons b(%9.4f) scalars(N "fstat F-statistic" "year Year" "field Field" "class Class" "firm Firm" "fieldyear Field $\times$ year" "classyear Class $\times$ year") sfmt(%9.2fc) nostar
 
 *** combine tables
-include "https://raw.githubusercontent.com/steveofconnell/PanelCombine/master/PanelCombine.do"
-
+*include "https://raw.githubusercontent.com/steveofconnell/PanelCombine/master/PanelCombine.do"
 panelcombine, use($tables/t5_iv_orig.tex $tables/t5_fs_orig.tex $tables/t5_iv_fix.tex $tables/t5_fs_fix.tex)  columncount(6) paneltitles("2SLS: original" "First stage: original" "2SLS: corrected" "First stage: corrected") save($tables/t5_combined.tex)
 
 panelcombine, use($tables/t5_iv_orig_nostar.tex $tables/t5_fs_orig_nostar.tex $tables/t5_iv_fix_nostar.tex $tables/t5_fs_fix_nostar.tex)  columncount(6) paneltitles("2SLS (original)" "First stage (original)" "2SLS (corrected)" "First stage (corrected)") save($tables/t5_combined_nostar.tex)

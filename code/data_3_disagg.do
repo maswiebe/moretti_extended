@@ -29,14 +29,6 @@ gegen zd2 = group(zd)
 tab zd zd2
 drop if zd2 ==.
 
-* MERGE WITH NBER PATENT DATA
-gsort patent
-merge m:m patent using  $main/data/apat63_99
-tab _merge
-summ
-drop _merge
-drop if inventor_id ==.
-
 ** MW: keep inventors with more than 3 cities in the same year
 
 * count inventors before assigning to modal city/field
@@ -48,7 +40,7 @@ gegen count = count(d1), by(bea zd year)
 gegen total = count(d1), by(zd year)
 g density14 = (count-1)/(total-1)
 compress
-save $main/data2/data_3_count_disagg, replace
+/* save $main/data2/data_3_count_disagg, replace */
 drop count total d1
 
 * I SAVE DENSITY MEASURES IN DATA FILES 
@@ -92,7 +84,7 @@ egen main_org        = mode(org_id),  maxmode by(inventor_id bea_code zd2 year)
 
 gsort inventor_id year
 compress
-gcollapse general original team team2 (sum) number citat, by(inventor_id bea_code zd2 year main_class main_org)
+gcollapse team team2 (sum) number citat, by(inventor_id bea_code zd2 year main_class main_org)
 * note: main_* variables are constant within by(), so just including them in the aggregated data
 * reduces from 4.2M to 3.1M
 

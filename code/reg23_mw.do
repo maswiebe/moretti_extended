@@ -26,12 +26,13 @@ gegen total = sum(number), by(inventor)
 keep if total  >=3.25
 
 * INCLUDE THE FOLLOWING 6 LINES IF YOU DON'T WANT INTERPOLATED DATA
-replace bea    =. if inter_bea   ==1
+** MW: I skipped interpolation
+/* replace bea    =. if inter_bea   ==1
 replace zd     =. if inter_zd    ==1
 replace class  =. if inter_class ==1
 replace bea    =. if inter_bea2  ==1
 replace zd     =. if inter_zd2   ==1
-replace class  =. if inter_class2==1
+replace class  =. if inter_class2==1 */
 
 
 * CLUSTER SIZE
@@ -237,6 +238,10 @@ lab var x "{&beta}(0)"
 * original regression
 reghdfe y x_p5 x_p4 x_p3 x_p2 x_p1 x x_m1 x_m2 x_m3 x_m4 x_m5 ,absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)  
 est sto m1
+file open myfile using "$tables/N_es_orig.txt", write replace
+file write myfile (e(N))
+file close myfile
+
 *coefplot, drop(_cons) vert order(x_m5 x_m4 x_m3 x_m2 x_m1 x x_p1 x_p2 x_p3 x_p4 x_p5)
 gen x_orig = x
 gen esample_orig = e(sample)
@@ -248,6 +253,9 @@ replace x = x_p0
 * need to use same variable to plot side-by-side
 reghdfe y x_p5 x_p4 x_p3 x_p2 x_p1 x x_m1 x_m2 x_m3 x_m4 x_m5 ,absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)  
 est sto m2
+file open myfile using "$tables/N_es_fix.txt", write replace
+file write myfile (e(N))
+file close myfile
 *coefplot, drop(_cons) vert order(x_m5 x_m4 x_m3 x_m2 x_m1 x x_p1 x_p2 x_p3 x_p4 x_p5)
 
 * combined
@@ -260,7 +268,7 @@ gegen esample_count = count(inventor_id) if esample_orig, by(inventor_id)
 su esample_count
 * estimation sample includes inventors with 2-24 observations
 
-bro inventor year x_m5 x_m4 x_m3 x_m2 x_m1 x x_p1 x_p2 x_p3 x_p4 x_p5 tt move_year esample_count if esample_orig
+*bro inventor year x_m5 x_m4 x_m3 x_m2 x_m1 x x_p1 x_p2 x_p3 x_p4 x_p5 tt move_year esample_count if esample_orig
 * no restriction on time gap between observations
 
 * do any inventors contribute to the regression but have 0s for all time indicators?
@@ -273,6 +281,7 @@ su xcount if esample_orig ,d
 * above, tmp_p is defined excluding year 0
     * ie. average size post-move does not include the first year in the new city
 * redo including tt=0 in the post period
+replace x = x_orig
 gegen tmp_pp0 = mean(x) if tt >= 0  & tt <= 5, by(inventor)
 gegen tmp_p0 = max(tmp_pp0),  by(inventor)
 drop tmp_pp0
@@ -301,12 +310,18 @@ lab var x_p50 "{&beta}(5)"
 replace x = x_orig
 reghdfe y x_p50 x_p40 x_p30 x_p20 x_p10 x x_m1 x_m2 x_m3 x_m4 x_m5 ,absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)  
 est sto m3
+file open myfile using "$tables/N_es_orig_incl0.txt", write replace
+file write myfile (e(N))
+file close myfile
 *coefplot, drop(_cons) vert order(x_m5 x_m4 x_m3 x_m2 x_m1 x x_p10 x_p20 x_p30 x_p40 x_p50)
 
 * fixed regression: using x=tmp_p0*t0
 replace x = x_p00
 reghdfe y x_p50 x_p40 x_p30 x_p20 x_p10 x x_m1 x_m2 x_m3 x_m4 x_m5 ,absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)  
 est sto m4
+file open myfile using "$tables/N_es_fix_incl0.txt", write replace
+file write myfile (e(N))
+file close myfile
 *coefplot, drop(_cons) vert order(x_m5 x_m4 x_m3 x_m2 x_m1 x x_p10 x_p20 x_p30 x_p40 x_p50)
 
 * combined
@@ -356,10 +371,12 @@ lab var sd_m5 "{&beta}(-5)"
 reghdfe y sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 if inrange(tt,-5,5), absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 eststo m5
 * include sd_m1 last, so reghdfe omits it
+file open myfile using "$tables/N_es_fixed.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot m5, drop(_cons) vert order(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5) omitted
 graph export "$figures/es_fixed.pdf", replace
 graph export "$figures/es_fixed.png", replace
-* N=15,156
 
 * what causes jump in CIs at t=0? 
 reghdfe y sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
@@ -423,6 +440,9 @@ reghdfe y b_m5 b_m4 b_m3 b_m2 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5 b_m1 if inrange(tt,-
 eststo m6
 * include b_m1 last, so reghdfe omits it
     * need to include it for the plot to show the omitted year
+file open myfile using "$tables/N_es_binary.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot m6, drop(_cons) vert order(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5) omitted
 graph export "$figures/es_binary.pdf", replace
 graph export "$figures/es_binary.png", replace
@@ -431,8 +451,9 @@ graph export "$figures/es_binary.png", replace
 
 ***
 * binary event study with Sun and Abraham estimator
+* didn't work
 
-ssc install eventstudyinteract, replace
+/* ssc install eventstudyinteract, replace
 ssc install event_plot, replace
 
 summ tt
@@ -455,7 +476,7 @@ forval x = 0/`relmax' {
 * last-treated cohort
     * can also use never-treated cohort
 sum move_year1
-gen last_cohort = move_year1==r(max)
+gen last_cohort = move_year1==r(max) */
 /* 
 eventstudyinteract y L_* F_* if inrange(tt,-5,5), vce(cluster cluster1) absorb(cluster1 year) cohort(move_year1) control_cohort(last_cohort)
 * takes >30min
@@ -481,13 +502,6 @@ drop if bea ==.
 
 gegen total = sum(number), by(inventor)
 keep if total  >=3.25
-
-replace bea    =. if inter_bea   ==1
-replace zd     =. if inter_zd    ==1
-replace class  =. if inter_class ==1
-replace bea    =. if inter_bea2  ==1
-replace zd     =. if inter_zd2   ==1
-replace class  =. if inter_class2==1
 
 g y = log(number)
 g x   = log(Den_bea_zd    )
@@ -594,6 +608,9 @@ reghdfe y post move_upXpost if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea 
     * need coefficients for Post and Moveup*Post
 reghdfe y m5 m4 m3 m2 p0 p1 p2 p3 p4 p5 b_m5 b_m4 b_m3 b_m2 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5 b_m1 if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 * this is event study for B7 term: move_up*post
+file open myfile using "$tables/N_es_binary_ddd.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot, drop(_cons) vert order(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5) omitted keep(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5)
 graph export "$figures/es_binary_ddd.pdf", replace
 graph export "$figures/es_binary_ddd.png", replace
@@ -631,6 +648,9 @@ lab var sd_m5 "{&beta}(-5)"
 
 * cts DDD event study
 reghdfe y m5 m4 m3 m2 p0 p1 p2 p3 p4 p5 sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
+file open myfile using "$tables/N_es_cts_ddd.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot, drop(_cons) vert order(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5) omitted keep(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5)
 graph export "$figures/es_cts_ddd.pdf", replace
 graph export "$figures/es_cts_ddd.png", replace
@@ -640,7 +660,7 @@ graph export "$figures/es_cts_ddd.png", replace
 *** origin imputation
 set scheme plotplainblind
 
-use "/home/michael/Dropbox/jobs/op_replication/moretti/AER_UPLOADED/data2/data_3_origin.dta", clear
+use "$main/data2/data_3_origin", clear
 
 drop if year  ==.
 drop if zd ==.
@@ -769,6 +789,9 @@ lab var sd_m5 "{&beta}(-5)"
 reghdfe y b_m5 b_m4 b_m3 b_m2 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5 b_m1 if inrange(tt,-5,5), absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 * exclude stayers
 eststo mo1
+file open myfile using "$tables/N_es_binary_origin.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot mo1, drop(_cons) vert order(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5) omitted
 graph export "$figures/es_binary_origin.pdf", replace
 graph export "$figures/es_binary_origin.png", replace
@@ -777,6 +800,9 @@ graph export "$figures/es_binary_origin.png", replace
 reghdfe y sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 if inrange(tt,-5,5), absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 * exclude stayers
 eststo mo2
+file open myfile using "$tables/N_es_cts_origin.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot mo2, drop(_cons) vert order(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5) omitted
 graph export "$figures/es_cts_origin.pdf", replace
 graph export "$figures/es_cts_origin.png", replace
@@ -787,6 +813,9 @@ reghdfe y moverXpost move_upXpost if inrange(tt,-5,5)|missing(tt)==1, absorb(yea
 * DDD event study
 reghdfe y m5 m4 m3 m2 p0 p1 p2 p3 p4 p5 b_m5 b_m4 b_m3 b_m2 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5 b_m1 if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 eststo mo3
+file open myfile using "$tables/N_es_binary_ddd_origin.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot mo3, drop(_cons) vert order(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5) omitted keep(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5)
 * 
 graph export "$figures/es_binary_ddd_origin.pdf", replace
@@ -800,6 +829,9 @@ reghdfe y moverXpost size_diffXpost if inrange(tt,-5,5)|missing(tt)==1, absorb(y
 * cts DDD event study
 reghdfe y m5 m4 m3 m2 p0 p1 p2 p3 p4 p5 sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 eststo mo4
+file open myfile using "$tables/N_es_cts_ddd_origin.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot mo4, drop(_cons) vert order(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5) omitted keep(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5)
 graph export "$figures/es_cts_ddd_origin.pdf", replace
 graph export "$figures/es_cts_ddd_origin.png", replace
@@ -808,7 +840,7 @@ graph export "$figures/es_cts_ddd_origin.png", replace
 *** destination imputation
 set scheme plotplainblind
 
-use "/home/michael/Dropbox/jobs/op_replication/moretti/AER_UPLOADED/data2/data_3_destination.dta", clear
+use "$main/data2/data_3_destination", clear
 
 drop if year  ==.
 drop if zd ==.
@@ -941,6 +973,9 @@ lab var sd_m5 "{&beta}(-5)"
 reghdfe y b_m5 b_m4 b_m3 b_m2 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5 b_m1 if inrange(tt,-5,5), absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 * exclude stayers
 eststo
+file open myfile using "$tables/N_es_binary_dest.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot, drop(_cons) vert order(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5) omitted
 graph export "$figures/es_binary_dest.pdf", replace
 graph export "$figures/es_binary_dest.png", replace
@@ -949,6 +984,9 @@ graph export "$figures/es_binary_dest.png", replace
 reghdfe y sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 if inrange(tt,-5,5), absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 * exclude stayers
 eststo
+file open myfile using "$tables/N_es_cts_dest.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot, drop(_cons) vert order(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5) omitted
 graph export "$figures/es_cts_dest.pdf", replace
 graph export "$figures/es_cts_dest.png", replace
@@ -960,6 +998,9 @@ reghdfe y moverXpost move_upXpost if inrange(tt,-5,5)|missing(tt)==1, absorb(yea
 * DDD event study
 reghdfe y m5 m4 m3 m2 p0 p1 p2 p3 p4 p5 b_m5 b_m4 b_m3 b_m2 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5 b_m1 if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 eststo
+file open myfile using "$tables/N_es_binary_ddd_dest.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot, drop(_cons) vert order(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5) omitted keep(b_m5 b_m4 b_m3 b_m2 b_m1 b_p0 b_p1 b_p2 b_p3 b_p4 b_p5)
 * 
 graph export "$figures/es_binary_ddd_dest.pdf", replace
@@ -973,6 +1014,9 @@ reghdfe y moverXpost size_diffXpost if inrange(tt,-5,5)|missing(tt)==1, absorb(y
 * cts DDD event study
 reghdfe y m5 m4 m3 m2 p0 p1 p2 p3 p4 p5 sd_m5 sd_m4 sd_m3 sd_m2 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5 sd_m1 if inrange(tt,-5,5)|missing(tt)==1, absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)
 eststo
+file open myfile using "$tables/N_es_cts_ddd_dest.txt", write replace
+file write myfile (e(N))
+file close myfile
 coefplot, drop(_cons) vert order(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5) omitted keep(sd_m5 sd_m4 sd_m3 sd_m2 sd_m1 sd_p0 sd_p1 sd_p2 sd_p3 sd_p4 sd_p5)
 graph export "$figures/es_cts_ddd_dest.pdf", replace
 graph export "$figures/es_cts_ddd_dest.png", replace

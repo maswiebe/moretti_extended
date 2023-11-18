@@ -1,35 +1,25 @@
-* set path
-global root "[location of replication archive]"
+* set path: uncomment the following line and set the filepath for the folder containing this run.do file
+*global root "[location of replication archive]"
 global main "$root/data/AER_UPLOADED"
 global tables "$root/output/tables"
 global figures "$root/output/figures"
 
+* Stata version control
+version 13.1
 
-* install: gtools, reghdfe, ivreg2, ranktest, ivreghdfe, carryforward
-foreach prg in gtools reghdfe ivreg2 ranktest ivreghdfe carryforward {
-	* install using ssc, but avoid re-installing if already present
-		capture which `prg'
-		if _rc == 111 {                 
-		   dis "Installing `prg'"
-		   ssc install `prg', replace
-		   }
-	}
+* configure library environment
+do "$root/code/_config.do"
 
 * clean the data
-clear
-do "$root/data/AER_UPLOADED/data/create_COMETS_Patent_ExtractForEnrico.do"
-* this sets version = 13.1
-clear
-do "$main/data/read_apat.do"
+do "$root/code/create_COMETS_Patent_ExtractForEnrico_mw.do"
 * main dataset
-do "$root/code/data_3.do"
+do "$root/code/data_3_mw.do"
 * impute missing observations
 do "$root/code/data_3_impute.do"
 * aggregate to inventor-cluster-year level
 do "$root/code/data_3_disagg.do"
 * construct the sample using different time units
 do "$root/code/data_4_resize.do"
-
 
 * event study
 do "$root/code/reg23_mw.do"

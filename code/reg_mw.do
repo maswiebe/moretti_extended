@@ -1,4 +1,51 @@
 *------------------------------------------------------------------------
+*** Fig 5 sample
+
+u $main/data2/data_3, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+g y = log(number)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
+
+egen total = sum(number), by(inventor)
+
+keep if total  >=3.25
+
+g x   = log(Den_bea_zd    )
+
+sort inventor year
+by inventor : g  x_m1 = x[_n-1]
+by inventor : g  x_m2 = x[_n-2]
+by inventor : g  x_m3 = x[_n-3]
+by inventor : g  x_m4 = x[_n-4]
+by inventor : g  x_m5 = x[_n-5]
+by inventor : g  x_p1 = x[_n+1]
+by inventor : g  x_p2 = x[_n+2]
+by inventor : g  x_p3 = x[_n+3]
+by inventor : g  x_p4 = x[_n+4]
+by inventor : g  x_p5 = x[_n+5]
+
+gegen cluster1               = group(bea zd)
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_bea_class_year = group(bea class year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+reghdfe y x_p5 x_p4 x_p3 x_p2 x_p1 x x_m1 x_m2 x_m3 x_m4 x_m5 ,absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new  ) vce(cluster cluster1)  
+
+su total if e(sample),d
+* average: 23.5
+su total,d
+* average: 10.1
+
+*------------------------------------------------------------------------
 *** main results for top 10%
 
 u $main/data2/data_3, clear
@@ -416,16 +463,16 @@ su
 restore
 
 tab evermove
-* 73% of obs change clusters, 27% stay
+* 72% of obs change clusters, 28% stay
     * so movers have more patents than stayers
 
 *--------------------
 *** does missingness of firm data vary by mover?
 tab evermove
 count if missing(org_id) & evermove==1
-* 71046 / 680503 = 10%
+* 70797 / 674003 = 10%
 count if missing(org_id) & evermove==0
-* 37684 / 251497 = 15%
+* 37764 / 258113 = 15%
 
 *--------------------
 *** do movers move to large clusters?
@@ -467,13 +514,13 @@ gen size_sp_diff = size_sp_end - size_sp_start
 bro year inventor_id cluster1 group_inventor_cluster _spell move size_sp_start size_sp_end size_sp_diff _end
 
 su size_sp_diff if evermove==0 & _end
-* -0.0014
+* -0.0015
 su size_sp_diff if evermove==0 
 * different, because assigning more weight to longer spells
 
 su Den_bea_zd
-* 0.0458
-* so for stayers, on average, cluster size decreases by 0.0014/0.0458 = 3% of the average cluster size
+* 0.0459
+* so for stayers, on average, cluster size decreases by 0.0015/0.0459 = 3% of the average cluster size
 
 * using city size
 gen size_bea_sp_start_temp = Den_bea if _seq==1
@@ -482,10 +529,9 @@ gen size_bea_sp_end_temp = Den_bea if _end==1
 gegen size_bea_sp_end = max(size_bea_sp_end_temp), by(group_inventor_cluster _spell)
 gen size_bea_sp_diff = size_bea_sp_end - size_bea_sp_start
 su size_bea_sp_diff if evermove==1 & _end
-* 0.0001
-    * city size inreases slightly for movers
+* 0.0000
 su size_bea_sp_diff if evermove==0 & _end
-* -0.0013
+* -0.0015
     * so almost all of the decrease for stayers is from decreasing city size
 
 *---------------------
@@ -777,10 +823,10 @@ esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle 
 esttab m* using "$tables/t3_own_other_org.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm")
 
 su number_*,d
-* median number of inventors by city-field: 854
-* median number of inventors by other-city, field: 30152
+* median number of inventors by city-field: 843
+* median number of inventors by other-city, field: 29990
 * median number of inventors by own-firm: 15
-* median number of inventors by other-firm: 775
+* median number of inventors by other-firm: 764
 
 *-------------------------------------------------------------------
 *** imputation summary stats
@@ -851,7 +897,7 @@ su dyear if dyear>1
 su dyear if dyear>1 & evermove==1
 * 3.89
 su dyear if dyear>1 & evermove==0
-* 3.66
+* 3.65
 * so movers have larger gaps
 
 su inventor_id if dyear==34
@@ -864,14 +910,14 @@ replace dyear = dyear-1
     * gap of n gets n-1 obs filled
 gcollapse (sum) dyear, by(evermove)
 table evermove, c(mean dyear)
-* movers: 701454
-* stayers: 224201
-    * so 76% of imputed observations are from evermovers
+* movers: 696906
+* stayers: 228808
+    * so 75% of imputed observations are from evermovers
 gcollapse (sum) dyear
 
 su dyear
-* 925655
-di 925655/932086
+* 925714
+di 925714/932116
 * would increase sample size by 99% by filling in all gaps
 restore
 
