@@ -5,3 +5,6 @@ while `"`1'"' != "" {
   macro shift
 }
 adopath ++ "$root/code/libraries/stata"
+
+* load packages
+include "$root/code/libraries/stata/p/PanelCombine.do" 
