@@ -1,5 +1,6 @@
 * set path: uncomment the following line and set the filepath for the folder containing this run.do file
 *global root "[location of replication archive]"
+global root "/home/michael/Dropbox/replications/moretti_extended"
 global main "$root/data/AER_UPLOADED"
 global tables "$root/output/tables"
 global figures "$root/output/figures"
@@ -30,3 +31,6 @@ do "$root/code/reg11_mw.do"
 
 * Table 3 replications, heterogeneity, mechanisms, imputation, time unit
 do "$root/code/reg_mw.do"
+
+* heterogeneity by time and field
+do "$root/code/het_time_field.do"
