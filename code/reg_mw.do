@@ -1045,8 +1045,8 @@ esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle 
 esttab m* using "$tables/t3_impute_orig.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 
 *----------------------------------------------------
-*** destination imputation
-u $main/data2/data_3_destination, clear
+*** origin imputation: recalculating cluster size
+u $main/data2/data_3_origin_agg, clear
 
 drop if year  ==.
 drop if zd ==.
@@ -1165,7 +1165,516 @@ estadd local firm "Yes"
 estadd local firmyear "Yes"
 
 esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_impute_orig_agg.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+*----------------------------------------------------
+*** origin imputation: recalculating cluster size
+* full sample 
+
+u $main/data2/data_3_origin_agg, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+gegen total = sum(number), by(inventor)
+/* keep if total  >=3.25 */
+
+g y = log(number+1)
+replace y=0 if missing(y)
+* need to use log(y+1), since now have number=0 with imputed observations
+    * filled-in obs have number=.
+g x   = log(Den_bea_zd    )
+gegen cluster1               = group(bea zd)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & cluster1 ~=. & bea ~=.
+
+gegen org_new2 = group(org_id) if org_id ~= ""
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_impute_orig_agg_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+*----------------------------------------------------
+*** destination imputation
+u $main/data2/data_3_destination, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+gegen total = sum(number), by(inventor)
+keep if total  >=3.25
+
+g y = log(number+1)
+replace y=0 if missing(y)
+* need to use log(y+1), since now have number=0 with imputed observations
+    * filled-in obs have number=.
+g x   = log(Den_bea_zd    )
+gegen cluster1               = group(bea zd)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & cluster1 ~=. & bea ~=.
+
+gegen org_new2 = group(org_id) if org_id ~= ""
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+gen esample = e(sample)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 esttab m* using "$tables/t3_impute_dest.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+* average cluster size including 'inactive' inventors
+su Den_bea_zd if esample
+* 0.0432
+* max 0.2986
+
+*----------------------------------------------------
+*** destination imputation: recalculating cluster size
+u $main/data2/data_3_destination_agg, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+gegen total = sum(number), by(inventor)
+keep if total  >=3.25
+
+g y = log(number+1)
+replace y=0 if missing(y)
+* need to use log(y+1), since now have number=0 with imputed observations
+    * filled-in obs have number=.
+g x   = log(Den_bea_zd    )
+gegen cluster1               = group(bea zd)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & cluster1 ~=. & bea ~=.
+
+gegen org_new2 = group(org_id) if org_id ~= ""
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+gen esample= e(sample)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_impute_dest_agg.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+* average cluster size including 'inactive' inventors
+su Den_bea_zd if esample
+* 0.0425
+* max 0.2663
+
+*----------------------------------------------------
+*** destination imputation: recalculating cluster size
+* full sample
+
+u $main/data2/data_3_destination_agg, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+gegen total = sum(number), by(inventor)
+/* keep if total  >=3.25 */
+
+g y = log(number+1)
+replace y=0 if missing(y)
+* need to use log(y+1), since now have number=0 with imputed observations
+    * filled-in obs have number=.
+g x   = log(Den_bea_zd    )
+gegen cluster1               = group(bea zd)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & cluster1 ~=. & bea ~=.
+
+gegen org_new2 = group(org_id) if org_id ~= ""
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_impute_dest_agg_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
 
 *-----------------------------------------------------------------------
 *** aggregation bias
@@ -1313,3 +1822,380 @@ eststo `model'
 
 esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("1-Month" "2-Month" "3-Month" "6-Month" "1-Year" "2-Year" "3-Year")
 esttab m* using "$tables/ta7_resize.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("1-Month" "2-Month" "3-Month" "6-Month" "1-Year" "2-Year" "3-Year")
+
+*------------------------------------------------------------------------
+*** main results using cluster size calculated from inventor-year data
+
+u $main/data2/data_3_agg, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+g y = log(number)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
+
+egen total = sum(number), by(inventor)
+
+keep if total  >=3.25
+
+g x   = log(Den_bea_zd    )
+
+gegen cluster1               = group(bea zd)
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_bea_class_year = group(bea class year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+gen esample = e(sample)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_invyear_size.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+* average cluster size including 'inactive' inventors
+su Den_bea_zd if esample
+* 0.0460
+* max 0.2927
+
+*------------------------------------------------------------------------
+*** main results using cluster size calculated from inventor-year data
+* on full sample
+
+u $main/data2/data_3_agg, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+g y = log(number)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
+
+egen total = sum(number), by(inventor)
+
+/* keep if total  >=3.25 */
+
+g x   = log(Den_bea_zd    )
+
+gegen cluster1               = group(bea zd)
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_bea_class_year = group(bea class year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_invyear_size_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+*------------------------------------------------------------------------
+*** main results for full sample
+
+u $main/data2/data_3, clear
+
+drop if year  ==.
+drop if zd ==.
+drop if bea ==.
+
+g y = log(number)
+keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
+
+egen total = sum(number), by(inventor)
+
+/* keep if total  >=3.25 */
+
+g x   = log(Den_bea_zd    )
+
+gegen cluster1               = group(bea zd)
+gegen cluster_bea_year       = group(bea year)
+gegen cluster_bea_class_year = group(bea class year)
+gegen cluster_zd_year        = group(zd year)
+gegen cluster_bea_class      = group(bea class)
+gegen cluster_class_year     = group(class year)
+gegen org_new                = group(org_id)
+
+lab var x "Log size"
+
+eststo clear
+qui reghdfe y x , absorb(year bea zd class) vce(cluster cluster1)
+eststo m1
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1) vce(cluster cluster1)
+eststo m2
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class) vce(cluster cluster1)
+eststo m3
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year) vce(cluster cluster1)
+eststo m4
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year) vce(cluster cluster1)
+eststo m5
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor) vce(cluster cluster1)
+eststo m6
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year) vce(cluster cluster1)
+eststo m7
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new) vce(cluster cluster1)
+eststo m8
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+qui reghdfe y x , absorb(year bea zd class cluster1 cluster_bea_class cluster_zd_year cluster_class_year inventor cluster_bea_year org_new org_new#year) vce(cluster cluster1)
+eststo m9
+estadd local year "Yes"
+estadd local city "Yes"
+estadd local field "Yes"
+estadd local class "Yes"
+estadd local cityfield "Yes"
+estadd local cityclass "Yes"
+estadd local fieldyear "Yes"
+estadd local classyear "Yes"
+estadd local inventor "Yes"
+estadd local cityyear "Yes"
+estadd local firm "Yes"
+estadd local firmyear "Yes"
+
+esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+esttab m* using "$tables/t3_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+

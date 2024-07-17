@@ -17,6 +17,8 @@ do "$root/code/create_COMETS_Patent_ExtractForEnrico_mw.do"
 do "$root/code/data_3_mw.do"
 * impute missing observations
 do "$root/code/data_3_impute.do"
+* recalculate cluster size after imputing
+do "$root/code/data_3_impute_size.do"
 * aggregate to inventor-cluster-year level
 do "$root/code/data_3_disagg.do"
 * construct the sample using different time units

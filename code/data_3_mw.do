@@ -314,7 +314,7 @@ gsort inventor_id year
 compress
 gcollapse main_bea main_zd main_class team team2 (sum) number citat, by(inventor_id year main_org)
 /* gcollapse main_bea main_zd main_class main_cat main_subcat general original team team2 (sum) number citat, by(inventor_id year main_org main_org_type ) */
-**MW: for multi-cluster inventors, this assigns all of an inventors patents in one year to their modal cluster
+**MW: for multi-cluster inventors, this assigns all of an inventor's patents in one year to their modal cluster
 
 
 ********************************************
