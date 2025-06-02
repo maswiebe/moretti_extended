@@ -6,7 +6,7 @@ global tables "$root/output/tables"
 global figures "$root/output/figures"
 
 * Stata version control
-version 13.1
+version 16
 
 * configure library environment
 do "$root/code/_config.do"

@@ -75,10 +75,20 @@ summ year team*
 * Collapse by inventor_id year. Note that main_org main_org_type are constant within a
 * inventor_id year pair. I include them in by() so that they are in the 
 * collapsed data
+
+**MW: merge with KPST 2021 patent quality data
+merge m:1 patent_id using "$root/data/kpst.dta"
+drop if _merge==2
+drop _merge
+
+* use level ratio, not log
+gen import = exp(lqsim010)/team
+
+
 summ
 sort inventor_id year
 compress
-gcollapse main_bea main_zd main_class team team2 (sum) number citat, by(inventor_id year main_org)
+gcollapse main_bea main_zd main_class team team2 avg_import=import (sum) number citations import, by(inventor_id year main_org)
 **MW: for multi-cluster inventors, this assigns all of an inventor's patents in one year to their modal cluster
 
 rename main_bea bea_code
@@ -106,9 +116,6 @@ drop firstyear* lastyear*
 gsort inventor_id year
 bysort inventor_id:  carryforward bea_code zd2 class org_id, replace
 
-gsort inventor_id year
-
-
 *** cluster size
 gsort inventor_id year bea zd 
 by inventor_id year bea zd: g d1 = 1 if _n ==1
@@ -125,7 +132,7 @@ drop if inventor ==.
 
 compress
 sort inventor_id year
-save $main/data2/data_3_origin_agg, replace
+save "$main/data2/data_3_origin_agg", replace
 summ
 
 restore
@@ -146,9 +153,6 @@ drop firstyear* lastyear*
 gsort inventor_id -year
 bysort inventor_id:  carryforward bea_code zd2 class org_id, replace
 
-gsort inventor_id year
-
-
 *** cluster size
 gsort inventor_id year bea zd 
 by inventor_id year bea zd: g d1 = 1 if _n ==1
@@ -165,7 +169,7 @@ drop if inventor ==.
 
 compress
 sort inventor_id year
-save $main/data2/data_3_destination_agg, replace
+save "$main/data2/data_3_destination_agg", replace
 summ
 
 restore
@@ -262,5 +266,5 @@ drop if inventor ==.
 
 compress
 sort inventor_id year
-save $main/data2/data_3_agg, replace
+save "$main/data2/data_3_agg", replace
 summ

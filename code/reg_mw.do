@@ -10,7 +10,7 @@ drop if bea ==.
 g y = log(number)
 keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
 
-egen total = sum(number), by(inventor)
+gegen total = sum(number), by(inventor)
 
 keep if total  >=3.25
 
@@ -57,7 +57,7 @@ drop if bea ==.
 g y = log(number)
 keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
 
-egen total = sum(number), by(inventor)
+gegen total = sum(number), by(inventor)
 
 keep if total  >=3.25
 
@@ -1292,6 +1292,89 @@ estadd local firmyear "Yes"
 esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 esttab m* using "$tables/t3_impute_orig_agg_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 
+*** poisson
+
+cap program drop t3_reg_fes
+program define t3_reg_fes, rclass
+    args y x output pkg 
+
+    eststo clear
+    qui `pkg' `y' `x', absorb(year bea zd class) vce(cluster bea_code#zd2)
+    eststo m1
+    estadd local year "Yes"
+    estadd local city "Yes"
+    estadd local field "Yes"
+    estadd local class "Yes"
+    qui `pkg' `y' `x', absorb(year class bea_code#zd2) vce(cluster bea_code#zd2)
+    eststo m2
+    estadd local year "Yes"
+    estadd local class "Yes"
+    estadd local cityfield "Yes"
+    qui `pkg' `y' `x', absorb(year bea_code#zd2 bea_code#class) vce(cluster bea_code#zd2)
+    eststo m3
+    estadd local year "Yes"
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    qui `pkg' `y' `x', absorb(bea_code#zd2 bea_code#class zd2#year) vce(cluster bea_code#zd2)
+    eststo m4
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    estadd local fieldyear "Yes"
+    qui `pkg' `y' `x', absorb(bea_code#zd2 bea_code#class zd2#year class#year) vce(cluster bea_code#zd2)
+    eststo m5
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    estadd local fieldyear "Yes"
+    estadd local classyear "Yes"
+    qui `pkg' `y' `x', absorb(bea_code#zd2 bea_code#class zd2#year class#year inventor_id) vce(cluster bea_code#zd2)
+    eststo m6
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    estadd local fieldyear "Yes"
+    estadd local classyear "Yes"
+    estadd local inventor "Yes"
+    qui `pkg' `y' `x', absorb(bea_code#zd2 bea_code#class zd2#year class#year inventor_id bea_code#year) vce(cluster bea_code#zd2)
+    eststo m7
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    estadd local fieldyear "Yes"
+    estadd local classyear "Yes"
+    estadd local inventor "Yes"
+    estadd local cityyear "Yes"
+    qui `pkg' `y' `x', absorb(bea_code#zd2 bea_code#class zd2#year class#year inventor_id bea_code#year org_new) vce(cluster bea_code#zd2)
+    eststo m8
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    estadd local fieldyear "Yes"
+    estadd local classyear "Yes"
+    estadd local inventor "Yes"
+    estadd local cityyear "Yes"
+    estadd local firm "Yes"
+    qui `pkg' `y' `x', absorb(bea_code#zd2 bea_code#class zd2#year class#year inventor_id bea_code#year org_new#year) vce(cluster bea_code#zd2)
+    eststo m9
+    estadd local cityfield "Yes"
+    estadd local cityclass "Yes"
+    estadd local fieldyear "Yes"
+    estadd local classyear "Yes"
+    estadd local inventor "Yes"
+    estadd local cityyear "Yes"
+    estadd local firmyear "Yes"
+
+    esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+    esttab m* using "$tables/`output'.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+end
+
+*** origin imputation: recalculating cluster size, full sample, poisson
+replace citations=0 if missing(citations)==1 & _fillin==1
+replace import=0 if missing(import) & _fillin==1
+keep citations import x inventor_id year bea_code zd2 class org_new
+
+* citations
+t3_reg_fes citations x "t3_impute_orig_agg_full_pois" ppmlhdfe
+
+* patent importance
+t3_reg_fes import x "t3_impute_orig_agg_full_pois_imp" ppmlhdfe
+
 *----------------------------------------------------
 *** destination imputation
 u $main/data2/data_3_destination, clear
@@ -1674,6 +1757,17 @@ estadd local firmyear "Yes"
 
 esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 esttab m* using "$tables/t3_impute_dest_agg_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+
+* destination imputation: recalculating cluster size, full sample, poisson, citations
+replace citations=0 if missing(citations)==1 & _fillin==1
+replace import=0 if missing(import)==1 & _fillin==1
+keep citations import x inventor_id year bea_code zd2 class org_new
+
+t3_reg_fes citations x "t3_impute_dest_agg_full_pois" ppmlhdfe
+
+* patent importance
+t3_reg_fes import x "t3_impute_dest_agg_full_pois_imp" ppmlhdfe
 
 
 *-----------------------------------------------------------------------
@@ -2076,6 +2170,13 @@ estadd local firmyear "Yes"
 esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 esttab m* using "$tables/t3_invyear_size_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 
+*** poisson 
+* depvar: total (fractional) citations
+    * citation-weighted patents, adjusting for patent quality
+* full sample
+
+t3_reg_fes citations x "t3_invyear_size_fullsample_pois" ppmlhdfe
+
 *------------------------------------------------------------------------
 *** main results for full sample
 
@@ -2088,7 +2189,7 @@ drop if bea ==.
 g y = log(number)
 keep if y~=. & zd ~=. & class ~=. & year ~=. & inventor ~=. & bea ~=.
 
-egen total = sum(number), by(inventor)
+gegen total = sum(number), by(inventor)
 
 /* keep if total  >=3.25 */
 
@@ -2198,4 +2299,365 @@ estadd local firmyear "Yes"
 
 esttab m*, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
 esttab m* using "$tables/t3_fullsample.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nomtitle nocons b(%9.4f) scalars(N "year Year" "city City" "field Field" "class Class" "cityfield City $\times$ field" "cityclass City $\times$ class" "fieldyear Field $\times$ year" "classyear Class $\times$ year" "inventor Inventor" "cityyear City $\times$ year" "firm Firm" "firmyear Firm $\times$ Year")
+
+*** poisson
+* depvar: total (fractional) citations
+    * citation-weighted patents, adjusting for patent quality
+
+t3_reg_fes citations x "t3_fullsample_poisson" ppmlhdfe
+
+
+*----------------------------------------------------------------
+*** heterogeneity by cluster size
+* poisson, citations, full sample, imputing
+
+*** origin imputation: recalculating cluster size
+* full sample
+
+u "$main/data2/data_3_origin_agg", clear
+
+gegen total = sum(number), by(inventor)
+g x = log(Den_bea_zd)
+* set depvar = 0 for interpolated observations
+replace citations=0 if missing(citations)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+* global quartiles 
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+est clear 
+ppmlhdfe citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+* separation check is not finishing, drop `ir` check
+    * problematic if separation is from continuous covariates x_q
+    * https://www.statalist.org/forums/forum/general-stata-discussion/general/1548421-ppmlhdfe-regression-not-starting
+eststo m1
+
+* use city-field and city-year FEs
+    * take simple average across fields
+        * could do weighted average, weighting by field size
+        * https://chatgpt.com/share/681d0497-c5c4-8004-900f-fee587a55f5e
+    * specify year==2000
+
+preserve
+keep if year==2000 & e(sample)
+* FEs are constant within city-field and city-year
+* so simple average is a weighted average by group; accounting for group size
+
+* how to interpret FE<0? answer: below-average
+
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+
+save "$main/data2/het_pois_cit_full_orig_fes", replace
+restore
+
+* in sending_metros:
+    * merge in
+    * save exp(F) for each destination-origin city pair
+    * new columns: orig_fe, dest_fe
+* in spreadsheet: city output is S^(a+1) * exp(F)
+    * effect: scaling up output in both cities
+
+
+
+*** destination imputation: recalculating cluster size
+* full sample
+
+u "$main/data2/data_3_destination_agg", clear
+
+gegen total = sum(number), by(inventor)
+g x = log(Den_bea_zd)
+* set depvar = 0 for interpolated observations
+replace citations=0 if missing(citations)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+* global quartiles 
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+ppmlhdfe citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m2
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+
+save "$main/data2/het_pois_cit_full_dest_fes", replace
+restore
+
+lab var x_q1 "Log size $\times$ Q1"
+lab var x_q2 "Log size $\times$ Q2"
+lab var x_q3 "Log size $\times$ Q3"
+lab var x_q4 "Log size $\times$ Q4"
+
+esttab m1 m2, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3)
+esttab m1 m2 using "$tables/t8_sizehet_full_impute.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3 _cons)
+
+
+*-------------
+* top10
+*** origin imputation: recalculating cluster size
+
+u "$main/data2/data_3_origin_agg", clear
+gegen total = sum(number), by(inventor)
+keep if total>=3.25
+g x = log(Den_bea_zd)
+replace citations=0 if missing(citations)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+est clear 
+ppmlhdfe citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m1
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+save "$main/data2/het_pois_cit_full_orig_top10_fes", replace
+restore
+
+*** destination imputation: recalculating cluster size
+
+u "$main/data2/data_3_destination_agg", clear
+
+gegen total = sum(number), by(inventor)
+keep if total>=3.25
+g x = log(Den_bea_zd)
+replace citations=0 if missing(citations)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+ppmlhdfe citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m2
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+save "$main/data2/het_pois_cit_full_dest_top10_fes", replace
+restore
+
+lab var x_q1 "Log size $\times$ Q1"
+lab var x_q2 "Log size $\times$ Q2"
+lab var x_q3 "Log size $\times$ Q3"
+lab var x_q4 "Log size $\times$ Q4"
+
+esttab m1 m2, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3 _cons)
+esttab m1 m2 using "$tables/t8_sizehet_top10_impute.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3 _cons)
+
+*-------------
+* bot90
+*** origin imputation: recalculating cluster size
+
+u "$main/data2/data_3_origin_agg", clear
+gegen total = sum(number), by(inventor)
+keep if total<3.25
+g x = log(Den_bea_zd)
+replace citations=0 if missing(citations)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+est clear 
+ppmlhdfe citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m1
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+save "$main/data2/het_pois_cit_full_orig_bot90_fes", replace
+restore
+
+*** destination imputation: recalculating cluster size
+
+u "$main/data2/data_3_destination_agg", clear
+
+gegen total = sum(number), by(inventor)
+keep if total<3.25
+g x = log(Den_bea_zd)
+replace citations=0 if missing(citations)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+ppmlhdfe citations x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m2
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+save "$main/data2/het_pois_cit_full_dest_bot90_fes", replace
+restore
+
+lab var x_q1 "Log size $\times$ Q1"
+lab var x_q2 "Log size $\times$ Q2"
+lab var x_q3 "Log size $\times$ Q3"
+lab var x_q4 "Log size $\times$ Q4"
+
+esttab m1 m2, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3 _cons)
+esttab m1 m2 using "$tables/t8_sizehet_bot90_impute.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3 _cons)
+
+
+*----------------------------------------
+*** quality-adjusted patents, using Kelly et al. (2021) patent importance
+* importance = fsim10 / bsim5 = 10-year forward similarity / 5-year backward similarity
+    * note: KPST use log ratio; here, using level
+* quality-adjusted patent = importance
+* y_it = sum_p imp_p * 1/team_p
+    * multiply importance by fractional patent, then aggregate to inventor-year level
+* imputing missing zeros, so use Poisson regression
+
+*** heterogeneity by cluster size
+* poisson, full sample, imputing
+
+*** origin imputation: recalculating cluster size
+u "$main/data2/data_3_origin_agg", clear
+gegen total = sum(number), by(inventor)
+g x = log(Den_bea_zd)
+replace import=0 if missing(import)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+* global quartiles 
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class import x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+est clear 
+ppmlhdfe import x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m1
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+
+save "$main/data2/het_pois_kpst_full_orig_fes", replace
+restore
+
+*** destination imputation: recalculating cluster size
+u "$main/data2/data_3_destination_agg", clear
+gegen total = sum(number), by(inventor)
+g x = log(Den_bea_zd)
+replace import=0 if missing(import)==1 & _fillin==1
+gegen org_new = group(org_id)
+
+* global quartiles 
+gegen pctile25 = pctile(x), p(25)
+gegen pctile50 = pctile(x), p(50)
+gegen pctile75 = pctile(x), p(75)
+g q1 = (x <= pctile25) if missing(x)==0
+g q2 = (x > pctile25 & x <= pctile50) if missing(x)==0
+g q3 = (x > pctile50 & x <= pctile75) if missing(x)==0
+g q4 = (x > pctile75) if missing(x)==0
+g x_q1 = x*q1
+g x_q2 = x*q2
+g x_q3 = x*q3
+g x_q4 = x*q4
+
+keep inventor_id year org_new bea_code zd2 class import x_q1 x_q2 x_q3 x_q4 q1 q2 q3 
+
+ppmlhdfe import x_q1 x_q2 x_q3 x_q4 q1 q2 q3, absorb(fe_cityfield=bea_code#zd2 bea_code#class zd2#year class#year inventor fe_cityyear=bea_code#year org_new#year) vce(cluster bea_code#zd2) verbose(1) sep(fe simplex)
+eststo m2
+
+preserve
+keep if year==2000 & e(sample)
+gcollapse fe_cityfield fe_cityyear, by(bea_code)
+gen fe = exp(fe_cityfield + fe_cityyear)
+save "$main/data2/het_pois_kpst_full_dest_fes", replace
+restore
+
+lab var x_q1 "Log size $\times$ Q1"
+lab var x_q2 "Log size $\times$ Q2"
+lab var x_q3 "Log size $\times$ Q3"
+lab var x_q4 "Log size $\times$ Q4"
+
+esttab m1 m2, se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3)
+esttab m1 m2 using "$tables/t8_sizehet_full_kpst_impute.tex", se ar2 label compress replace star(* 0.10 ** 0.05 *** 0.01) nocons b(%9.4f) mtitle("Origin" "Destination") drop(q1 q2 q3 _cons)
 

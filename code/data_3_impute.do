@@ -14,6 +14,8 @@ egen main_org        = mode(org_id),  maxmode by(inventor_id year)
 * fractional attribution
 gegen tmp7 = count(inventor_id), by(patent_id) 
 g number = 1/tmp7
+g raw_number = 1
+gen raw_citations = citations
 replace citations = citations / tmp7
 drop tmp7
 
@@ -30,7 +32,7 @@ summ year team*
 summ
 sort inventor_id year
 compress
-gcollapse main_bea main_zd main_class team team2 (sum) number citat, by(inventor_id year main_org)
+gcollapse main_bea main_zd main_class team team2 avg_frac_cite=citations (sum) number citations raw_number raw_citations, by(inventor_id year main_org)
 
 rename main_bea bea_code
 rename main_zd zd2

@@ -111,14 +111,15 @@ g number_zd_bea_other_org = number_zd_bea - number_zd_bea_org
     * this should subtract the focal inventor, but data is not aggregated; can have the same inventor in multiple firms in the same field-city-year
 drop d1
 
-** MW: not used
-/* gsort inventor_id year bea 
+** MW: city-level clusters
+    * compare to CUSP; doesn't have field
+gsort inventor_id year bea 
 by inventor_id year bea: g d1 = 1 if _n ==1
 gegen count = count(d1), by(bea year)
 gegen total = count(d1), by(year)
-g density13 = (count -1)/(total-1)
+g density_bea = (count -1)/(total-1)
 drop count total d1
- */
+
 gsort inventor_id year bea zd 
 by inventor_id year bea zd: g d1 = 1 if _n ==1
 gegen count = count(d1), by(bea zd year)
@@ -211,7 +212,7 @@ summ */
 
 /* u $main/data2/data_patent_level_3 */
 gsort bea zd2 year
-gcollapse density14 number_zd_other_bea number_zd_bea, by(bea zd2 year)
+gcollapse density14 number_zd_other_bea number_zd_bea density_bea, by(bea zd2 year)
 * save field-other-city here
 compress
 save $main/data2/density14_3, replace
@@ -286,8 +287,10 @@ egen main_org_type   = mode(org_typ), maxmode by(inventor_id year) */
 
 * Section 10: aggregation bias stats
 preserve
-gsort bea zd year
-merge m:1 bea zd year using $main/data2/density14_3
+gsort bea_code zd2 year
+merge m:1 bea_code zd2 year using $main/data2/density14_3
+/* gsort bea zd year */
+/* merge m:1 bea zd year using $main/data2/density14_3 */
 su density14 if bea_code==main_bea & zd2==main_zd
 restore
 
@@ -296,6 +299,7 @@ gegen tmp7 = count(inventor_id), by(patent_id)
 summ tmp7, detail
 tab tmp7 if tmp7 <=20
 g number = 1/tmp7
+g number_raw = 1
 replace citations = citations / tmp7
 drop tmp7
 
@@ -309,10 +313,21 @@ summ year team*
 * Collapse by inventor_id year. Note that main_org main_org_type are constant within a
 * inventor_id year pair. I include them in by() so that they are in the 
 * collapsed data
+
+**MW: merge with KPST 2021 patent quality data
+merge m:1 patent_id using "$root/data/kpst.dta"
+drop if _merge==2
+drop _merge
+
+* use level ratio, not log
+gen importance = exp(lqsim010)
+gen import_frac = importance/team
+
 summ
 gsort inventor_id year  
 compress
-gcollapse main_bea main_zd main_class team team2 (sum) number citat, by(inventor_id year main_org)
+gcollapse main_bea main_zd main_class team team2 avg_import = import_frac (sum) number number_raw citations import=import_frac, by(inventor_id year main_org)
+/* gcollapse main_bea main_zd main_class team team2 (sum) number citat, by(inventor_id year main_org) */
 /* gcollapse main_bea main_zd main_class main_cat main_subcat general original team team2 (sum) number citat, by(inventor_id year main_org main_org_type ) */
 **MW: for multi-cluster inventors, this assigns all of an inventor's patents in one year to their modal cluster
 
@@ -393,8 +408,11 @@ merge m:1 bea year using $main/data2/density13_3
 tab _merge
 drop _merge */
 
-gsort bea zd year
-merge m:1 bea zd year using $main/data2/density14_3
+* nov 2024: now have to specify zd2
+gsort bea zd2 year
+merge m:1 bea zd2 year using "$main/data2/density14_3"
+/* gsort bea zd year */
+/* merge m:1 bea zd year using $main/data2/density14_3 */
 tab _merge
 drop _merge
 
@@ -416,7 +434,7 @@ tab _merge
 drop _merge */
 
 gsort org_id bea zd2 year
-merge m:1 org_id bea zd year using $main/data2/density_other_city
+merge m:1 org_id bea zd year using "$main/data2/density_other_city"
 tab _merge
 drop _merge
 
@@ -438,12 +456,12 @@ g Den_bea_classB = density15B
 g Den_bea_catB    = density20B
 g Den_bea_subcatB = density21B */
 
-drop density* 
+drop density14
 /* drop density* Den_bea_cat* Den_bea_subcatB* cat subcat */
 drop if inventor ==.
 
 compress
-save $main/data2/data_3, replace
+save "$main/data2/data_3", replace
 summ
 
 
